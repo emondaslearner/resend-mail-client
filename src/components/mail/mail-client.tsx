@@ -310,7 +310,6 @@ export function MailClient() {
         onSelectAccount={(id) => setState((current) => ({ ...current, activeAccountId: id }))}
         onMailboxChange={changeMailbox}
         onAddAccount={() => setAddOpen(true)}
-        onRefresh={() => void refresh()}
         onShowInfo={() => setDetailsOpen(true)}
         onRemoveAccount={removeAccount}
       />

@@ -17,7 +17,6 @@ type SidebarProps = {
   onSelectAccount: (id: string) => void;
   onMailboxChange: (mailbox: Mailbox) => void;
   onAddAccount: () => void;
-  onRefresh: () => void;
   onShowInfo: () => void;
   onRemoveAccount: (id: string) => void;
 };
@@ -83,15 +82,6 @@ export function Sidebar(props: SidebarProps) {
             <Send className="size-4" />
           )}
           <span className="flex-1 text-left">Sent</span>
-        </Button>
-        <Button
-          className="w-full justify-start cursor-pointer"
-          variant="ghost"
-          onClick={props.onRefresh}
-          disabled={props.loading || !activeAccount}
-        >
-          <RefreshCw className={props.loading ? "size-4 animate-spin" : "size-4"} />
-          Refresh
         </Button>
         <Button
           className="w-full justify-start cursor-pointer"
