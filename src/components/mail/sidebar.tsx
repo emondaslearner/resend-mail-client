@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { MailAccount, Mailbox } from "@/components/mail/types";
 import { maskKey } from "@/components/mail/storage";
+import { cn } from "@/lib/utils";
 
 type SidebarProps = {
   accounts: MailAccount[];
@@ -23,6 +24,12 @@ type SidebarProps = {
 
 export function Sidebar(props: SidebarProps) {
   const activeAccount = props.accounts.find((account) => account.id === props.activeAccountId);
+  const mailboxButtonClass = (selected: boolean) => cn(
+    "h-10 w-full justify-start rounded-[8px] px-3 cursor-pointer",
+    selected
+      ? "bg-[#d3e3fd] font-semibold text-[#001d35] shadow-sm hover:bg-[#d3e3fd]"
+      : "text-slate-800 hover:bg-white/80",
+  );
 
   return (
     <aside className="flex h-screen w-[260px] shrink-0 flex-col border-r bg-[#f6f8fc] p-3">
@@ -45,8 +52,9 @@ export function Sidebar(props: SidebarProps) {
 
       <nav className="space-y-1">
         <Button
-          className="w-full justify-start cursor-pointer"
-          variant={props.mailbox === "inbox" ? "secondary" : "ghost"}
+          className={mailboxButtonClass(props.mailbox === "inbox")}
+          variant="ghost"
+          aria-current={props.mailbox === "inbox" ? "page" : undefined}
           onClick={() => props.onMailboxChange("inbox")}
         >
           <Inbox className="size-4" />
@@ -58,12 +66,13 @@ export function Sidebar(props: SidebarProps) {
           ) : null}
         </Button>
         <Button
-          className="w-full justify-start cursor-pointer"
-          variant={props.mailbox === "sent" ? "secondary" : "ghost"}
+          className={mailboxButtonClass(props.mailbox === "sent")}
+          variant="ghost"
+          aria-current={props.mailbox === "sent" ? "page" : undefined}
           onClick={() => props.onMailboxChange("sent")}
         >
           <Send className="size-4" />
-          Sent
+          <span className="flex-1 text-left">Sent</span>
         </Button>
         <Button
           className="w-full justify-start cursor-pointer"
