@@ -2,6 +2,7 @@
 
 import { Info, Loader2, Mail, MailOpen, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { EmailDetail } from "@/lib/resend/types";
@@ -14,6 +15,7 @@ type MessageViewProps = {
   mailbox: Mailbox;
   loading: boolean;
   isRead: boolean;
+  isManuallySent: boolean;
   onShowInfo: () => void;
   onToggleRead: () => void;
   onSendReply: (text: string) => Promise<void>;
@@ -51,11 +53,16 @@ export function MessageView(props: MessageViewProps) {
       <header className="flex min-h-16 items-center justify-between gap-4 border-b px-6">
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold">{props.message.subject}</h1>
-          <p className="truncate text-sm text-muted-foreground">
-            {props.mailbox === "sent"
-              ? `To ${props.message.to.join(", ")}`
-              : `From ${senderName(props.message.from)}`}
-          </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-sm text-muted-foreground">
+              {props.mailbox === "sent"
+                ? `To ${props.message.to.join(", ")}`
+                : `From ${senderName(props.message.from)}`}
+            </p>
+            {props.isManuallySent ? (
+              <Badge className="shrink-0 bg-emerald-600">Manually sent</Badge>
+            ) : null}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {props.mailbox === "inbox" ? (

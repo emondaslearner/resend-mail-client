@@ -16,12 +16,14 @@ type MessageListProps = {
   mailbox: Mailbox;
   loading: boolean;
   readIds?: Set<string>;
+  manualSentIds?: Set<string>;
   onSelect: (id: string) => void;
 };
 
 export function MessageList(props: MessageListProps) {
   const [query, setQuery] = useState("");
   const readIds = props.readIds ?? new Set<string>();
+  const manualSentIds = props.manualSentIds ?? new Set<string>();
   const visibleMessages = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return props.messages;
@@ -45,6 +47,11 @@ export function MessageList(props: MessageListProps) {
               {props.messages.filter((message) => !readIds.has(message.id)).length} new
             </p>
           ) : null}
+          {props.mailbox === "sent" ? (
+            <p className="text-xs text-emerald-700">
+              {props.messages.filter((message) => manualSentIds.has(message.id)).length} manually sent
+            </p>
+          ) : null}
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -66,11 +73,13 @@ export function MessageList(props: MessageListProps) {
         ) : null}
         {!props.loading && visibleMessages.map((message) => {
           const unread = props.mailbox === "inbox" && !readIds.has(message.id);
+          const manuallySent = props.mailbox === "sent" && manualSentIds.has(message.id);
           return (
             <button
               key={message.id}
               className={[
                 "block w-full cursor-pointer border-b px-4 py-3 text-left hover:bg-[#f6f8fc]",
+                manuallySent ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-transparent",
                 message.id === props.selectedId ? "bg-[#eef4ff]" : unread ? "bg-white" : "bg-[#fafafa]",
               ].join(" ")}
               onClick={() => props.onSelect(message.id)}
@@ -103,6 +112,7 @@ export function MessageList(props: MessageListProps) {
                   {message.subject}
                 </p>
                 {unread ? <Badge variant="secondary">New</Badge> : null}
+                {manuallySent ? <Badge className="bg-emerald-600">Manually sent</Badge> : null}
                 {message.attachmentsCount > 0 ? (
                   <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
                 ) : null}

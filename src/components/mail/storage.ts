@@ -5,6 +5,7 @@ import type { MailAccount } from "@/components/mail/types";
 const STORAGE_KEY = "resend-mail-client.accounts.v1";
 const ACTIVE_KEY = "resend-mail-client.active-account.v1";
 const READ_STATE_KEY = "resend-mail-client.read-state.v1";
+const MANUAL_SENT_STATE_KEY = "resend-mail-client.manual-sent-state.v1";
 
 function safeParseAccounts(value: string | null): MailAccount[] {
   if (!value) return [];
@@ -44,7 +45,7 @@ export function saveActiveAccountId(accountId: string | null) {
   window.localStorage.setItem(ACTIVE_KEY, accountId);
 }
 
-function safeParseReadState(value: string | null): Record<string, string[]> {
+function safeParseMessageState(value: string | null): Record<string, string[]> {
   if (!value) return {};
 
   try {
@@ -68,11 +69,20 @@ function safeParseReadState(value: string | null): Record<string, string[]> {
 
 export function loadReadState(): Record<string, string[]> {
   if (typeof window === "undefined") return {};
-  return safeParseReadState(window.localStorage.getItem(READ_STATE_KEY));
+  return safeParseMessageState(window.localStorage.getItem(READ_STATE_KEY));
 }
 
 export function saveReadState(readState: Record<string, string[]>) {
   window.localStorage.setItem(READ_STATE_KEY, JSON.stringify(readState));
+}
+
+export function loadManualSentState(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  return safeParseMessageState(window.localStorage.getItem(MANUAL_SENT_STATE_KEY));
+}
+
+export function saveManualSentState(manualSentState: Record<string, string[]>) {
+  window.localStorage.setItem(MANUAL_SENT_STATE_KEY, JSON.stringify(manualSentState));
 }
 
 export function maskKey(apiKey?: string): string {

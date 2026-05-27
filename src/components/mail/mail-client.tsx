@@ -20,9 +20,11 @@ import { MessageView } from "@/components/mail/message-view";
 import { Sidebar } from "@/components/mail/sidebar";
 import {
   loadActiveAccountId,
+  loadManualSentState,
   loadReadState,
   loadStoredAccounts,
   saveActiveAccountId,
+  saveManualSentState,
   saveReadState,
   saveStoredAccounts,
 } from "@/components/mail/storage";
@@ -54,6 +56,8 @@ export function MailClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [readState, setReadState] = useState<Record<string, string[]>>({});
   const [readStateLoaded, setReadStateLoaded] = useState(false);
+  const [manualSentState, setManualSentState] = useState<Record<string, string[]>>({});
+  const [manualSentStateLoaded, setManualSentStateLoaded] = useState(false);
 
   const activeAccount = useMemo(
     () => state.accounts.find((account) => account.id === state.activeAccountId) || null,
@@ -62,6 +66,9 @@ export function MailClient() {
   const activeReadIds = useMemo(() => (
     new Set(activeAccount ? readState[activeAccount.id] || [] : [])
   ), [activeAccount, readState]);
+  const activeManualSentIds = useMemo(() => (
+    new Set(activeAccount ? manualSentState[activeAccount.id] || [] : [])
+  ), [activeAccount, manualSentState]);
   const unreadCount = state.mailbox === "inbox"
     ? state.messages.filter((message) => !activeReadIds.has(message.id)).length
     : 0;
@@ -70,7 +77,9 @@ export function MailClient() {
     const stored = loadStoredAccounts();
     const activeId = loadActiveAccountId();
     setReadState(loadReadState());
+    setManualSentState(loadManualSentState());
     setReadStateLoaded(true);
+    setManualSentStateLoaded(true);
     setState((current) => ({
       ...current,
       accounts: stored,
@@ -93,6 +102,11 @@ export function MailClient() {
     if (!readStateLoaded) return;
     saveReadState(readState);
   }, [readState, readStateLoaded]);
+
+  useEffect(() => {
+    if (!manualSentStateLoaded) return;
+    saveManualSentState(manualSentState);
+  }, [manualSentState, manualSentStateLoaded]);
 
   const refresh = useCallback(async (
     account: MailAccount | null = activeAccount,
@@ -175,6 +189,11 @@ export function MailClient() {
       delete next[accountId];
       return next;
     });
+    setManualSentState((current) => {
+      const next = { ...current };
+      delete next[accountId];
+      return next;
+    });
   }
 
   function setMessageRead(emailId: string, read: boolean) {
@@ -187,6 +206,19 @@ export function MailClient() {
       } else {
         nextIds.delete(emailId);
       }
+      return {
+        ...current,
+        [activeAccount.id]: Array.from(nextIds),
+      };
+    });
+  }
+
+  function setMessageManuallySent(emailId: string) {
+    if (!activeAccount) return;
+
+    setManualSentState((current) => {
+      const nextIds = new Set(current[activeAccount.id] || []);
+      nextIds.add(emailId);
       return {
         ...current,
         [activeAccount.id]: Array.from(nextIds),
@@ -217,6 +249,7 @@ export function MailClient() {
   async function reply(text: string) {
     if (!activeAccount || !state.selectedMessage) return;
     const result = await sendReply(activeAccount, state.selectedMessage.id, text);
+    setMessageManuallySent(result.id);
     setNotice(`Reply sent: ${result.id}`);
     await refresh(activeAccount, state.mailbox);
   }
@@ -259,6 +292,7 @@ export function MailClient() {
         mailbox={state.mailbox}
         loading={state.loading}
         readIds={activeReadIds}
+        manualSentIds={activeManualSentIds}
         onSelect={(id) => void selectMessage(id)}
       />
       <div className="relative flex min-w-0 flex-1">
@@ -285,6 +319,7 @@ export function MailClient() {
           mailbox={state.mailbox}
           loading={state.loadingMessage}
           isRead={state.selectedMessage ? activeReadIds.has(state.selectedMessage.id) : true}
+          isManuallySent={state.selectedMessage ? activeManualSentIds.has(state.selectedMessage.id) : false}
           onShowInfo={() => setDetailsOpen(true)}
           onToggleRead={() => {
             if (!state.selectedMessage) return;
