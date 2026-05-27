@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resend Email Client
 
-## Getting Started
+A local Gmail-style client for Resend inbound email. It can load a Resend key
+from `.env` or store manually added account keys in browser local storage.
 
-First, run the development server:
+## Setup
 
 ```bash
+cp .env.example .env
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Account
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set these in `.env` to expose one server-side account in the UI:
 
-## Learn More
+```bash
+RESEND_FULL_ACCESS="re_..."
+RESEND_FROM_EMAIL="Name <support@example.com>"
+```
 
-To learn more about Next.js, take a look at the following resources:
+`RESEND_API_KEY` is also accepted as a fallback. Full access is recommended
+because inbound retrieval, domains, API key metadata, and replies require more
+than send-only access.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Features
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Switch between multiple Resend accounts.
+- Add browser-local accounts by API key.
+- Read inbound emails through the Resend Receiving API.
+- Read sent messages through the Resend Emails API.
+- Reply to inbound emails with `Re:` subjects and thread headers.
+- Inspect optional API details: domains, key metadata, headers, raw MIME URL,
+  and attachments.

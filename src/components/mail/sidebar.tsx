@@ -1,0 +1,128 @@
+"use client";
+
+import { Inbox, Info, KeyRound, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import type { MailAccount, Mailbox } from "@/components/mail/types";
+import { maskKey } from "@/components/mail/storage";
+
+type SidebarProps = {
+  accounts: MailAccount[];
+  activeAccountId: string | null;
+  mailbox: Mailbox;
+  loading: boolean;
+  onSelectAccount: (id: string) => void;
+  onMailboxChange: (mailbox: Mailbox) => void;
+  onAddAccount: () => void;
+  onRefresh: () => void;
+  onShowInfo: () => void;
+  onRemoveAccount: (id: string) => void;
+};
+
+export function Sidebar(props: SidebarProps) {
+  const activeAccount = props.accounts.find((account) => account.id === props.activeAccountId);
+
+  return (
+    <aside className="flex h-screen w-[260px] shrink-0 flex-col border-r bg-[#f6f8fc] p-3">
+      <div className="mb-3 flex items-center gap-2 px-2">
+        <div className="flex size-10 items-center justify-center rounded-[8px] bg-blue-600 text-white">
+          <Inbox className="size-5" />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">Resend Mail</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {activeAccount?.label || "No account"}
+          </div>
+        </div>
+      </div>
+
+      <Button className="mb-3 justify-start cursor-pointer" onClick={props.onAddAccount}>
+        <Plus className="size-4" />
+        Add account
+      </Button>
+
+      <nav className="space-y-1">
+        <Button
+          className="w-full justify-start cursor-pointer"
+          variant={props.mailbox === "inbox" ? "secondary" : "ghost"}
+          onClick={() => props.onMailboxChange("inbox")}
+        >
+          <Inbox className="size-4" />
+          Inbox
+        </Button>
+        <Button
+          className="w-full justify-start cursor-pointer"
+          variant={props.mailbox === "sent" ? "secondary" : "ghost"}
+          onClick={() => props.onMailboxChange("sent")}
+        >
+          <Send className="size-4" />
+          Sent
+        </Button>
+        <Button
+          className="w-full justify-start cursor-pointer"
+          variant="ghost"
+          onClick={props.onRefresh}
+          disabled={props.loading || !activeAccount}
+        >
+          <RefreshCw className={props.loading ? "size-4 animate-spin" : "size-4"} />
+          Refresh
+        </Button>
+        <Button
+          className="w-full justify-start cursor-pointer"
+          variant="ghost"
+          onClick={props.onShowInfo}
+          disabled={!activeAccount}
+        >
+          <Info className="size-4" />
+          API info
+        </Button>
+      </nav>
+
+      <Separator className="my-4" />
+
+      <div className="mb-2 px-2 text-xs font-medium uppercase tracking-normal text-muted-foreground">
+        Accounts
+      </div>
+      <div className="space-y-1 overflow-auto pr-1">
+        {props.accounts.map((account) => {
+          const selected = account.id === props.activeAccountId;
+          return (
+            <div key={account.id} className="group flex items-center gap-1">
+              <button
+                className={[
+                  "flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-[8px] px-2 py-2 text-left text-sm",
+                  selected ? "bg-white shadow-sm" : "hover:bg-white/70",
+                ].join(" ")}
+                onClick={() => props.onSelectAccount(account.id)}
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback>{account.label.slice(0, 1).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{account.label}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {account.source === "env" ? "from .env" : maskKey(account.apiKey)}
+                  </span>
+                </span>
+              </button>
+              {account.source === "local" ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 shrink-0 cursor-pointer opacity-0 group-hover:opacity-100"
+                  onClick={() => props.onRemoveAccount(account.id)}
+                  aria-label="Remove account"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              ) : (
+                <KeyRound className="mr-2 size-4 text-muted-foreground" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
