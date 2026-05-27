@@ -1,9 +1,12 @@
-# Resend Email Client
+# Resend Mail Client
 
-A local Gmail-style client for Resend inbound email. It can load a Resend key
-from `.env` or store manually added account keys in browser local storage.
+A simple mail client for working with Resend accounts.
 
-## Setup
+It gives you a familiar inbox, sent folder, account switcher, message view, and reply box in one focused local app. It is meant for checking received mail, replying quickly, and moving between multiple Resend accounts without needing a separate dashboard flow.
+
+The app keeps the main screen clean by default and shows extra account or message details only when you ask for them.
+
+## Run Locally
 
 ```bash
 cp .env.example .env
@@ -13,25 +16,9 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Environment Account
-
-Set these in `.env` to expose one server-side account in the UI:
+To use a default local account, add your Resend key and sender address to `.env`:
 
 ```bash
 RESEND_FULL_ACCESS="re_..."
-RESEND_FROM_EMAIL="Name <support@example.com>"
+RESEND_FROM_EMAIL="Name <you@example.com>"
 ```
-
-`RESEND_API_KEY` is also accepted as a fallback. Full access is recommended
-because inbound retrieval, domains, API key metadata, and replies require more
-than send-only access.
-
-## Features
-
-- Switch between multiple Resend accounts.
-- Add browser-local accounts by API key.
-- Read inbound emails through the Resend Receiving API.
-- Read sent messages through the Resend Emails API.
-- Reply to inbound emails with `Re:` subjects and thread headers.
-- Inspect optional API details: domains, key metadata, headers, raw MIME URL,
-  and attachments.
