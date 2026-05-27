@@ -278,6 +278,11 @@ export function MailClient() {
   }
 
   function changeMailbox(mailbox: Mailbox) {
+    if (mailbox === state.mailbox) {
+      if (!state.loading) void refresh(activeAccount, mailbox);
+      return;
+    }
+
     setState((current) => ({ ...current, mailbox, selectedMessage: null }));
   }
 

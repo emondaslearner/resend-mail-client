@@ -24,6 +24,8 @@ type SidebarProps = {
 
 export function Sidebar(props: SidebarProps) {
   const activeAccount = props.accounts.find((account) => account.id === props.activeAccountId);
+  const loadingInbox = props.loading && props.mailbox === "inbox";
+  const loadingSent = props.loading && props.mailbox === "sent";
   const mailboxButtonClass = (selected: boolean) => cn(
     "h-10 w-full justify-start rounded-[8px] px-3 cursor-pointer",
     selected
@@ -57,7 +59,11 @@ export function Sidebar(props: SidebarProps) {
           aria-current={props.mailbox === "inbox" ? "page" : undefined}
           onClick={() => props.onMailboxChange("inbox")}
         >
-          <Inbox className="size-4" />
+          {loadingInbox ? (
+            <RefreshCw className="size-4 animate-spin" />
+          ) : (
+            <Inbox className="size-4" />
+          )}
           <span className="flex-1 text-left">Inbox</span>
           {props.unreadCount > 0 ? (
             <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
@@ -71,7 +77,11 @@ export function Sidebar(props: SidebarProps) {
           aria-current={props.mailbox === "sent" ? "page" : undefined}
           onClick={() => props.onMailboxChange("sent")}
         >
-          <Send className="size-4" />
+          {loadingSent ? (
+            <RefreshCw className="size-4 animate-spin" />
+          ) : (
+            <Send className="size-4" />
+          )}
           <span className="flex-1 text-left">Sent</span>
         </Button>
         <Button

@@ -45,7 +45,9 @@ export function MessageList(props: MessageListProps) {
             <h2 className="text-lg font-semibold">
               {props.mailbox === "inbox" ? "Inbox" : "Sent"}
             </h2>
-            <p className="text-xs text-muted-foreground">{props.messages.length} messages</p>
+            <p className="text-xs text-muted-foreground">
+              {props.loading ? "Refreshing..." : `${props.messages.length} messages`}
+            </p>
             {props.mailbox === "inbox" ? (
               <p className="text-xs text-blue-700">
                 {unreadCount} new
