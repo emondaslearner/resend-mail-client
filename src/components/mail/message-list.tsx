@@ -5,6 +5,7 @@ import { Paperclip, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import type { EmailSummary } from "@/lib/resend/types";
 import type { Mailbox } from "@/components/mail/types";
 import { formatDate, senderName } from "@/components/mail/format";
@@ -14,11 +15,13 @@ type MessageListProps = {
   selectedId?: string;
   mailbox: Mailbox;
   loading: boolean;
+  readIds?: Set<string>;
   onSelect: (id: string) => void;
 };
 
 export function MessageList(props: MessageListProps) {
   const [query, setQuery] = useState("");
+  const readIds = props.readIds ?? new Set<string>();
   const visibleMessages = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return props.messages;
@@ -37,6 +40,11 @@ export function MessageList(props: MessageListProps) {
             {props.mailbox === "inbox" ? "Inbox" : "Sent"}
           </h2>
           <p className="text-xs text-muted-foreground">{props.messages.length} messages</p>
+          {props.mailbox === "inbox" ? (
+            <p className="text-xs text-blue-700">
+              {props.messages.filter((message) => !readIds.has(message.id)).length} new
+            </p>
+          ) : null}
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -56,38 +64,55 @@ export function MessageList(props: MessageListProps) {
             No messages available for this account.
           </div>
         ) : null}
-        {!props.loading && visibleMessages.map((message) => (
-          <button
-            key={message.id}
-            className={[
-              "block w-full cursor-pointer border-b px-4 py-3 text-left hover:bg-[#f6f8fc]",
-              message.id === props.selectedId ? "bg-[#eef4ff]" : "bg-white",
-            ].join(" ")}
-            onClick={() => props.onSelect(message.id)}
-          >
-            <div className="mb-1 flex items-center justify-between gap-3">
-              <span className="truncate text-sm font-medium">
-                {props.mailbox === "sent"
-                  ? `To: ${message.to.join(", ")}`
-                  : senderName(message.from)}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {formatDate(message.createdAt)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="min-w-0 flex-1 truncate text-sm text-foreground">
-                {message.subject}
+        {!props.loading && visibleMessages.map((message) => {
+          const unread = props.mailbox === "inbox" && !readIds.has(message.id);
+          return (
+            <button
+              key={message.id}
+              className={[
+                "block w-full cursor-pointer border-b px-4 py-3 text-left hover:bg-[#f6f8fc]",
+                message.id === props.selectedId ? "bg-[#eef4ff]" : unread ? "bg-white" : "bg-[#fafafa]",
+              ].join(" ")}
+              onClick={() => props.onSelect(message.id)}
+            >
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <span className={[
+                  "truncate text-sm",
+                  unread ? "font-semibold text-slate-950" : "font-medium text-slate-700",
+                ].join(" ")}
+                >
+                  {props.mailbox === "sent"
+                    ? `To: ${message.to.join(", ")}`
+                    : senderName(message.from)}
+                </span>
+                <span className={[
+                  "shrink-0 text-xs",
+                  unread ? "font-medium text-blue-700" : "text-muted-foreground",
+                ].join(" ")}
+                >
+                  {formatDate(message.createdAt)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {unread ? <span className="size-2 shrink-0 rounded-full bg-blue-600" /> : null}
+                <p className={[
+                  "min-w-0 flex-1 truncate text-sm",
+                  unread ? "font-semibold text-slate-950" : "text-muted-foreground",
+                ].join(" ")}
+                >
+                  {message.subject}
+                </p>
+                {unread ? <Badge variant="secondary">New</Badge> : null}
+                {message.attachmentsCount > 0 ? (
+                  <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                ) : null}
+              </div>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {message.id}
               </p>
-              {message.attachmentsCount > 0 ? (
-                <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
-              ) : null}
-            </div>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {message.id}
-            </p>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </ScrollArea>
     </section>
   );

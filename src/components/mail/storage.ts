@@ -4,6 +4,7 @@ import type { MailAccount } from "@/components/mail/types";
 
 const STORAGE_KEY = "resend-mail-client.accounts.v1";
 const ACTIVE_KEY = "resend-mail-client.active-account.v1";
+const READ_STATE_KEY = "resend-mail-client.read-state.v1";
 
 function safeParseAccounts(value: string | null): MailAccount[] {
   if (!value) return [];
@@ -41,6 +42,37 @@ export function saveActiveAccountId(accountId: string | null) {
     return;
   }
   window.localStorage.setItem(ACTIVE_KEY, accountId);
+}
+
+function safeParseReadState(value: string | null): Record<string, string[]> {
+  if (!value) return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .filter((entry): entry is [string, unknown[]] => (
+          typeof entry[0] === "string" && Array.isArray(entry[1])
+        ))
+        .map(([accountId, ids]) => [
+          accountId,
+          ids.filter((id): id is string => typeof id === "string"),
+        ]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+export function loadReadState(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  return safeParseReadState(window.localStorage.getItem(READ_STATE_KEY));
+}
+
+export function saveReadState(readState: Record<string, string[]>) {
+  window.localStorage.setItem(READ_STATE_KEY, JSON.stringify(readState));
 }
 
 export function maskKey(apiKey?: string): string {

@@ -12,6 +12,7 @@ type SidebarProps = {
   activeAccountId: string | null;
   mailbox: Mailbox;
   loading: boolean;
+  unreadCount: number;
   onSelectAccount: (id: string) => void;
   onMailboxChange: (mailbox: Mailbox) => void;
   onAddAccount: () => void;
@@ -49,7 +50,12 @@ export function Sidebar(props: SidebarProps) {
           onClick={() => props.onMailboxChange("inbox")}
         >
           <Inbox className="size-4" />
-          Inbox
+          <span className="flex-1 text-left">Inbox</span>
+          {props.unreadCount > 0 ? (
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+              {props.unreadCount}
+            </span>
+          ) : null}
         </Button>
         <Button
           className="w-full justify-start cursor-pointer"

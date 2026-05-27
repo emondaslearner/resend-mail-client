@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Loader2, Mail, Paperclip } from "lucide-react";
+import { Info, Loader2, Mail, MailOpen, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +13,9 @@ type MessageViewProps = {
   message: EmailDetail | null;
   mailbox: Mailbox;
   loading: boolean;
+  isRead: boolean;
   onShowInfo: () => void;
+  onToggleRead: () => void;
   onSendReply: (text: string) => Promise<void>;
 };
 
@@ -55,14 +57,26 @@ export function MessageView(props: MessageViewProps) {
               : `From ${senderName(props.message.from)}`}
           </p>
         </div>
-        <Button
-          className="shrink-0 cursor-pointer"
-          variant="outline"
-          onClick={props.onShowInfo}
-        >
-          <Info className="size-4" />
-          API info
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {props.mailbox === "inbox" ? (
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={props.onToggleRead}
+            >
+              {props.isRead ? <Mail className="size-4" /> : <MailOpen className="size-4" />}
+              {props.isRead ? "Mark unread" : "Mark read"}
+            </Button>
+          ) : null}
+          <Button
+            className="cursor-pointer"
+            variant="outline"
+            onClick={props.onShowInfo}
+          >
+            <Info className="size-4" />
+            API info
+          </Button>
+        </div>
       </header>
 
       <ScrollArea className="flex-1">

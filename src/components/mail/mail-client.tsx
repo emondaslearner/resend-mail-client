@@ -20,8 +20,10 @@ import { MessageView } from "@/components/mail/message-view";
 import { Sidebar } from "@/components/mail/sidebar";
 import {
   loadActiveAccountId,
+  loadReadState,
   loadStoredAccounts,
   saveActiveAccountId,
+  saveReadState,
   saveStoredAccounts,
 } from "@/components/mail/storage";
 import type { MailAccount, MailState, Mailbox } from "@/components/mail/types";
@@ -50,15 +52,25 @@ export function MailClient() {
   const [addOpen, setAddOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [readState, setReadState] = useState<Record<string, string[]>>({});
+  const [readStateLoaded, setReadStateLoaded] = useState(false);
 
   const activeAccount = useMemo(
     () => state.accounts.find((account) => account.id === state.activeAccountId) || null,
     [state.accounts, state.activeAccountId],
   );
+  const activeReadIds = useMemo(() => (
+    new Set(activeAccount ? readState[activeAccount.id] || [] : [])
+  ), [activeAccount, readState]);
+  const unreadCount = state.mailbox === "inbox"
+    ? state.messages.filter((message) => !activeReadIds.has(message.id)).length
+    : 0;
 
   useEffect(() => {
     const stored = loadStoredAccounts();
     const activeId = loadActiveAccountId();
+    setReadState(loadReadState());
+    setReadStateLoaded(true);
     setState((current) => ({
       ...current,
       accounts: stored,
@@ -76,6 +88,11 @@ export function MailClient() {
     saveStoredAccounts(state.accounts);
     saveActiveAccountId(state.activeAccountId);
   }, [state.accounts, state.activeAccountId]);
+
+  useEffect(() => {
+    if (!readStateLoaded) return;
+    saveReadState(readState);
+  }, [readState, readStateLoaded]);
 
   const refresh = useCallback(async (
     account: MailAccount | null = activeAccount,
@@ -153,6 +170,28 @@ export function MailClient() {
         selectedMessage: null,
       };
     });
+    setReadState((current) => {
+      const next = { ...current };
+      delete next[accountId];
+      return next;
+    });
+  }
+
+  function setMessageRead(emailId: string, read: boolean) {
+    if (!activeAccount || state.mailbox !== "inbox") return;
+
+    setReadState((current) => {
+      const nextIds = new Set(current[activeAccount.id] || []);
+      if (read) {
+        nextIds.add(emailId);
+      } else {
+        nextIds.delete(emailId);
+      }
+      return {
+        ...current,
+        [activeAccount.id]: Array.from(nextIds),
+      };
+    });
   }
 
   async function selectMessage(emailId: string) {
@@ -165,6 +204,7 @@ export function MailClient() {
         selectedMessage: message,
         loadingMessage: false,
       }));
+      setMessageRead(emailId, true);
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -205,6 +245,7 @@ export function MailClient() {
         activeAccountId={state.activeAccountId}
         mailbox={state.mailbox}
         loading={state.loading}
+        unreadCount={unreadCount}
         onSelectAccount={(id) => setState((current) => ({ ...current, activeAccountId: id }))}
         onMailboxChange={changeMailbox}
         onAddAccount={() => setAddOpen(true)}
@@ -217,6 +258,7 @@ export function MailClient() {
         selectedId={state.selectedMessage?.id}
         mailbox={state.mailbox}
         loading={state.loading}
+        readIds={activeReadIds}
         onSelect={(id) => void selectMessage(id)}
       />
       <div className="relative flex min-w-0 flex-1">
@@ -242,7 +284,12 @@ export function MailClient() {
           message={state.selectedMessage}
           mailbox={state.mailbox}
           loading={state.loadingMessage}
+          isRead={state.selectedMessage ? activeReadIds.has(state.selectedMessage.id) : true}
           onShowInfo={() => setDetailsOpen(true)}
+          onToggleRead={() => {
+            if (!state.selectedMessage) return;
+            setMessageRead(state.selectedMessage.id, !activeReadIds.has(state.selectedMessage.id));
+          }}
           onSendReply={reply}
         />
       </div>
