@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Paperclip, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ type MessageListProps = {
   loading: boolean;
   readIds?: Set<string>;
   manualSentIds?: Set<string>;
+  onMarkAllRead?: () => void;
   onSelect: (id: string) => void;
 };
 
@@ -24,6 +26,7 @@ export function MessageList(props: MessageListProps) {
   const [query, setQuery] = useState("");
   const readIds = props.readIds ?? new Set<string>();
   const manualSentIds = props.manualSentIds ?? new Set<string>();
+  const unreadCount = props.messages.filter((message) => !readIds.has(message.id)).length;
   const visibleMessages = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return props.messages;
@@ -37,20 +40,33 @@ export function MessageList(props: MessageListProps) {
   return (
     <section className="h-screen w-[390px] shrink-0 border-r bg-white">
       <header className="space-y-3 border-b px-4 py-3">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {props.mailbox === "inbox" ? "Inbox" : "Sent"}
-          </h2>
-          <p className="text-xs text-muted-foreground">{props.messages.length} messages</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              {props.mailbox === "inbox" ? "Inbox" : "Sent"}
+            </h2>
+            <p className="text-xs text-muted-foreground">{props.messages.length} messages</p>
+            {props.mailbox === "inbox" ? (
+              <p className="text-xs text-blue-700">
+                {unreadCount} new
+              </p>
+            ) : null}
+            {props.mailbox === "sent" ? (
+              <p className="text-xs text-emerald-700">
+                {props.messages.filter((message) => manualSentIds.has(message.id)).length} manually sent
+              </p>
+            ) : null}
+          </div>
           {props.mailbox === "inbox" ? (
-            <p className="text-xs text-blue-700">
-              {props.messages.filter((message) => !readIds.has(message.id)).length} new
-            </p>
-          ) : null}
-          {props.mailbox === "sent" ? (
-            <p className="text-xs text-emerald-700">
-              {props.messages.filter((message) => manualSentIds.has(message.id)).length} manually sent
-            </p>
+            <Button
+              className="cursor-pointer"
+              size="sm"
+              variant="outline"
+              disabled={unreadCount === 0 || props.loading}
+              onClick={props.onMarkAllRead}
+            >
+              Mark all read
+            </Button>
           ) : null}
         </div>
         <div className="relative">

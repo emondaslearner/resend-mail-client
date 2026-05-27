@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AddAccountDialog } from "@/components/mail/add-account-dialog";
 import { ApiDetails } from "@/components/mail/api-details";
@@ -53,6 +60,7 @@ export function MailClient() {
   const [envAccount, setEnvAccount] = useState<EnvAccount | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [readState, setReadState] = useState<Record<string, string[]>>({});
   const [readStateLoaded, setReadStateLoaded] = useState(false);
@@ -226,6 +234,21 @@ export function MailClient() {
     });
   }
 
+  function markAllRead() {
+    if (!activeAccount || state.mailbox !== "inbox") return;
+
+    setReadState((current) => {
+      const nextIds = new Set(current[activeAccount.id] || []);
+      state.messages.forEach((message) => nextIds.add(message.id));
+      return {
+        ...current,
+        [activeAccount.id]: Array.from(nextIds),
+      };
+    });
+    setMarkAllReadOpen(false);
+    setNotice("All inbox messages marked as read.");
+  }
+
   async function selectMessage(emailId: string) {
     if (!activeAccount) return;
     setState((current) => ({ ...current, loadingMessage: true, error: null }));
@@ -293,6 +316,7 @@ export function MailClient() {
         loading={state.loading}
         readIds={activeReadIds}
         manualSentIds={activeManualSentIds}
+        onMarkAllRead={() => setMarkAllReadOpen(true)}
         onSelect={(id) => void selectMessage(id)}
       />
       <div className="relative flex min-w-0 flex-1">
@@ -330,6 +354,29 @@ export function MailClient() {
       </div>
 
       <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addAccount} />
+      <Dialog open={markAllReadOpen} onOpenChange={setMarkAllReadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mark all as read?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm leading-6 text-muted-foreground">
+            This will mark all currently loaded inbox messages for this account as read
+            in this browser.
+          </p>
+          <DialogFooter>
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => setMarkAllReadOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button className="cursor-pointer" onClick={markAllRead}>
+              Mark all as read
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
         <SheetContent className="w-full p-0 sm:max-w-xl">
           <SheetHeader className="border-b p-4">
