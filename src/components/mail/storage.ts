@@ -1,11 +1,17 @@
 "use client";
 
 import type { MailAccount } from "@/components/mail/types";
+import type { MailSettings } from "@/components/mail/types";
 
 const STORAGE_KEY = "resend-mail-client.accounts.v1";
 const ACTIVE_KEY = "resend-mail-client.active-account.v1";
 const READ_STATE_KEY = "resend-mail-client.read-state.v1";
 const MANUAL_SENT_STATE_KEY = "resend-mail-client.manual-sent-state.v1";
+const SETTINGS_KEY = "resend-mail-client.settings.v1";
+
+export const DEFAULT_SETTINGS: MailSettings = {
+  autoCheckEnabled: true,
+};
 
 function safeParseAccounts(value: string | null): MailAccount[] {
   if (!value) return [];
@@ -83,6 +89,27 @@ export function loadManualSentState(): Record<string, string[]> {
 
 export function saveManualSentState(manualSentState: Record<string, string[]>) {
   window.localStorage.setItem(MANUAL_SENT_STATE_KEY, JSON.stringify(manualSentState));
+}
+
+export function loadSettings(): MailSettings {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  const value = window.localStorage.getItem(SETTINGS_KEY);
+  if (!value) return DEFAULT_SETTINGS;
+
+  try {
+    const parsed = JSON.parse(value);
+    return {
+      autoCheckEnabled: typeof parsed?.autoCheckEnabled === "boolean"
+        ? parsed.autoCheckEnabled
+        : DEFAULT_SETTINGS.autoCheckEnabled,
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export function saveSettings(settings: MailSettings) {
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
 export function maskKey(apiKey?: string): string {

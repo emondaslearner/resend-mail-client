@@ -1,15 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AddAccountDialog } from "@/components/mail/add-account-dialog";
 import { ApiDetails } from "@/components/mail/api-details";
@@ -22,20 +13,26 @@ import {
   sendReply,
 } from "@/components/mail/api";
 import { EmptyStart } from "@/components/mail/empty-start";
+import { MarkAllReadDialog } from "@/components/mail/mark-all-read-dialog";
 import { MessageList } from "@/components/mail/message-list";
 import { MessageView } from "@/components/mail/message-view";
+import { NoticeBanner } from "@/components/mail/notice-banner";
+import { SettingsDialog } from "@/components/mail/settings-dialog";
 import { Sidebar } from "@/components/mail/sidebar";
 import {
+  DEFAULT_SETTINGS,
   loadActiveAccountId,
   loadManualSentState,
   loadReadState,
+  loadSettings,
   loadStoredAccounts,
   saveActiveAccountId,
   saveManualSentState,
   saveReadState,
+  saveSettings,
   saveStoredAccounts,
 } from "@/components/mail/storage";
-import type { MailAccount, MailState, Mailbox } from "@/components/mail/types";
+import type { MailAccount, MailSettings, MailState, Mailbox } from "@/components/mail/types";
 
 const INITIAL_STATE: MailState = {
   accounts: [],
@@ -55,13 +52,17 @@ type EnvAccount = {
   fromAddress: string | null;
 };
 
+type RefreshOptions = { silent?: boolean };
 export function MailClient() {
   const [state, setState] = useState<MailState>(INITIAL_STATE);
   const [envAccount, setEnvAccount] = useState<EnvAccount | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [settings, setSettings] = useState<MailSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [readState, setReadState] = useState<Record<string, string[]>>({});
   const [readStateLoaded, setReadStateLoaded] = useState(false);
   const [manualSentState, setManualSentState] = useState<Record<string, string[]>>({});
@@ -84,8 +85,10 @@ export function MailClient() {
   useEffect(() => {
     const stored = loadStoredAccounts();
     const activeId = loadActiveAccountId();
+    setSettings(loadSettings());
     setReadState(loadReadState());
     setManualSentState(loadManualSentState());
+    setSettingsLoaded(true);
     setReadStateLoaded(true);
     setManualSentStateLoaded(true);
     setState((current) => ({
@@ -107,6 +110,11 @@ export function MailClient() {
   }, [state.accounts, state.activeAccountId]);
 
   useEffect(() => {
+    if (!settingsLoaded) return;
+    saveSettings(settings);
+  }, [settings, settingsLoaded]);
+
+  useEffect(() => {
     if (!readStateLoaded) return;
     saveReadState(readState);
   }, [readState, readStateLoaded]);
@@ -119,14 +127,17 @@ export function MailClient() {
   const refresh = useCallback(async (
     account: MailAccount | null = activeAccount,
     mailbox: Mailbox = state.mailbox,
+    options: RefreshOptions = {},
   ) => {
     if (!account) return;
-    setState((current) => ({
-      ...current,
-      loading: true,
-      selectedMessage: null,
-      error: null,
-    }));
+    if (!options.silent) {
+      setState((current) => ({
+        ...current,
+        loading: true,
+        selectedMessage: null,
+        error: null,
+      }));
+    }
 
     try {
       const [info, messages] = await Promise.all([
@@ -140,6 +151,7 @@ export function MailClient() {
         loading: false,
       }));
     } catch (error) {
+      if (options.silent) return;
       setState((current) => ({
         ...current,
         loading: false,
@@ -154,6 +166,20 @@ export function MailClient() {
     if (!activeAccount) return;
     void refresh(activeAccount, state.mailbox);
   }, [activeAccount, refresh, state.mailbox]);
+
+  useEffect(() => {
+    if (!settings.autoCheckEnabled || !activeAccount || state.loading) return;
+    let checking = false;
+    const interval = window.setInterval(() => {
+      if (checking) return;
+      checking = true;
+      void refresh(activeAccount, state.mailbox, { silent: true })
+        .finally(() => {
+          checking = false;
+        });
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, [activeAccount, refresh, settings.autoCheckEnabled, state.loading, state.mailbox]);
 
   function addEnvAccount() {
     if (!envAccount?.available) return;
@@ -311,6 +337,7 @@ export function MailClient() {
         onMailboxChange={changeMailbox}
         onAddAccount={() => setAddOpen(true)}
         onShowInfo={() => setDetailsOpen(true)}
+        onShowSettings={() => setSettingsOpen(true)}
         onRemoveAccount={removeAccount}
       />
       <MessageList
@@ -324,24 +351,14 @@ export function MailClient() {
         onSelect={(id) => void selectMessage(id)}
       />
       <div className="relative flex min-w-0 flex-1">
-        {(state.error || notice) ? (
-          <div className="absolute left-4 right-4 top-3 z-10 flex items-center justify-between rounded-[8px] border bg-white px-4 py-2 text-sm shadow-sm">
-            <span className={state.error ? "text-destructive" : "text-emerald-700"}>
-              {state.error || notice}
-            </span>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="size-7 cursor-pointer"
-              onClick={() => {
-                setNotice(null);
-                setState((current) => ({ ...current, error: null }));
-              }}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        ) : null}
+        <NoticeBanner
+          error={state.error}
+          notice={notice}
+          onClose={() => {
+            setNotice(null);
+            setState((current) => ({ ...current, error: null }));
+          }}
+        />
         <MessageView
           message={state.selectedMessage}
           mailbox={state.mailbox}
@@ -358,29 +375,17 @@ export function MailClient() {
       </div>
 
       <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addAccount} />
-      <Dialog open={markAllReadOpen} onOpenChange={setMarkAllReadOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Mark all as read?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm leading-6 text-muted-foreground">
-            This will mark all currently loaded inbox messages for this account as read
-            in this browser.
-          </p>
-          <DialogFooter>
-            <Button
-              className="cursor-pointer"
-              variant="outline"
-              onClick={() => setMarkAllReadOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button className="cursor-pointer" onClick={markAllRead}>
-              Mark all as read
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MarkAllReadDialog
+        open={markAllReadOpen}
+        onOpenChange={setMarkAllReadOpen}
+        onConfirm={markAllRead}
+      />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={settings}
+        onSettingsChange={setSettings}
+      />
       <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
         <SheetContent className="w-full p-0 sm:max-w-xl">
           <SheetHeader className="border-b p-4">

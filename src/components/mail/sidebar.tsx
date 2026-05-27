@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, Info, KeyRound, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
+import { Inbox, Info, KeyRound, Plus, RefreshCw, Send, Settings, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,7 @@ type SidebarProps = {
   onMailboxChange: (mailbox: Mailbox) => void;
   onAddAccount: () => void;
   onShowInfo: () => void;
+  onShowSettings: () => void;
   onRemoveAccount: (id: string) => void;
 };
 
@@ -91,6 +92,14 @@ export function Sidebar(props: SidebarProps) {
         >
           <Info className="size-4" />
           API info
+        </Button>
+        <Button
+          className="w-full justify-start cursor-pointer"
+          variant="ghost"
+          onClick={props.onShowSettings}
+        >
+          <Settings className="size-4" />
+          Settings
         </Button>
       </nav>
 

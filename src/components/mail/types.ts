@@ -16,6 +16,10 @@ export type MailAccount = {
 
 export type Mailbox = "inbox" | "sent";
 
+export type MailSettings = {
+  autoCheckEnabled: boolean;
+};
+
 export type MailState = {
   accounts: MailAccount[];
   activeAccountId: string | null;
