@@ -32,27 +32,18 @@ import {
   saveSettings,
   saveStoredAccounts,
 } from "@/components/mail/storage";
-import type { MailAccount, MailSettings, MailState, Mailbox } from "@/components/mail/types";
-
-const INITIAL_STATE: MailState = {
-  accounts: [],
-  activeAccountId: null,
-  mailbox: "inbox",
-  messages: [],
-  selectedMessage: null,
-  accountInfo: null,
-  loading: false,
-  loadingMessage: false,
-  error: null,
-};
-
-type EnvAccount = {
-  available: boolean;
-  label: string;
-  fromAddress: string | null;
-};
+import {
+  INITIAL_STATE,
+  type EnvAccount,
+  type MailAccount,
+  type MailSettings,
+  type MailState,
+  type Mailbox,
+  type ReplyPayload,
+} from "@/components/mail/types";
 
 type RefreshOptions = { silent?: boolean };
+
 export function MailClient() {
   const [state, setState] = useState<MailState>(INITIAL_STATE);
   const [envAccount, setEnvAccount] = useState<EnvAccount | null>(null);
@@ -295,9 +286,15 @@ export function MailClient() {
     }
   }
 
-  async function reply(text: string) {
+  async function reply(payload: ReplyPayload) {
     if (!activeAccount || !state.selectedMessage) return;
-    const result = await sendReply(activeAccount, state.selectedMessage.id, text);
+    const result = await sendReply(
+      activeAccount,
+      state.selectedMessage.id,
+      payload.text,
+      payload.html,
+      payload.attachments,
+    );
     setMessageManuallySent(result.id);
     setNotice(`Reply sent: ${result.id}`);
     await refresh(activeAccount, state.mailbox);
@@ -350,7 +347,7 @@ export function MailClient() {
         onMarkAllRead={() => setMarkAllReadOpen(true)}
         onSelect={(id) => void selectMessage(id)}
       />
-      <div className="relative flex min-w-0 flex-1">
+      <div className="relative flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         <NoticeBanner
           error={state.error}
           notice={notice}

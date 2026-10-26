@@ -7,14 +7,13 @@ import type {
   SendReplyResponse,
   SentResponse,
 } from "@/lib/resend/types";
-import { toAccountRequest, type MailAccount } from "@/components/mail/types";
-import type { Mailbox } from "@/components/mail/types";
-
-type EnvAccountResponse = {
-  available: boolean;
-  label: string;
-  fromAddress: string | null;
-};
+import {
+  toAccountRequest,
+  type AttachmentPayload,
+  type EnvAccount,
+  type MailAccount,
+  type Mailbox,
+} from "@/components/mail/types";
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -31,7 +30,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-export async function loadEnvAccount(): Promise<EnvAccountResponse> {
+export async function loadEnvAccount(): Promise<EnvAccount> {
   const response = await fetch("/api/env-account");
   if (!response.ok) throw new Error("Unable to inspect environment account.");
   return response.json();
@@ -73,10 +72,14 @@ export async function sendReply(
   account: MailAccount,
   emailId: string,
   text: string,
+  html?: string,
+  attachments?: AttachmentPayload[],
 ): Promise<SendReplyResponse> {
   return postJson<SendReplyResponse>("/api/resend/reply", {
     account: toAccountRequest(account),
     emailId,
     text,
+    html,
+    attachments,
   });
 }

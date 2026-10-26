@@ -45,3 +45,26 @@ export function bytes(value: number): string {
   if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+export async function fileToAttachment(file: File): Promise<{
+  filename: string;
+  content: string;
+  contentType: string;
+  size: number;
+}> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      resolve({
+        filename: file.name,
+        content: base64,
+        contentType: file.type || "application/octet-stream",
+        size: file.size,
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

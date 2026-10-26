@@ -3,10 +3,9 @@
 import { Info, Loader2, Mail, MailOpen, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { EmailDetail } from "@/lib/resend/types";
-import type { Mailbox } from "@/components/mail/types";
+import type { Mailbox, ReplyPayload } from "@/components/mail/types";
 import { formatDate, previewText, senderName } from "@/components/mail/format";
 import { ReplyBox } from "@/components/mail/reply-box";
 
@@ -18,13 +17,13 @@ type MessageViewProps = {
   isManuallySent: boolean;
   onShowInfo: () => void;
   onToggleRead: () => void;
-  onSendReply: (text: string) => Promise<void>;
+  onSendReply: (payload: ReplyPayload) => Promise<void>;
 };
 
 export function MessageView(props: MessageViewProps) {
   if (props.loading) {
     return (
-      <section className="flex h-screen flex-1 items-center justify-center bg-white">
+      <section className="flex h-full flex-1 items-center justify-center bg-white">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </section>
     );
@@ -32,7 +31,7 @@ export function MessageView(props: MessageViewProps) {
 
   if (!props.message) {
     return (
-      <section className="flex h-screen flex-1 items-center justify-center bg-white p-8">
+      <section className="flex h-full flex-1 items-center justify-center bg-white p-8">
         <div className="max-w-sm text-center">
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-[8px] bg-[#f1f3f4]">
             <Mail className="size-7 text-muted-foreground" />
@@ -49,8 +48,9 @@ export function MessageView(props: MessageViewProps) {
   const bodyText = previewText(props.message.text, props.message.html);
 
   return (
-    <section className="flex h-screen flex-1 flex-col bg-white">
-      <header className="flex min-h-16 items-center justify-between gap-4 border-b px-6">
+    <section className="flex h-full flex-1 flex-col overflow-hidden bg-white">
+      {/* Fixed Header */}
+      <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b px-6">
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold">{props.message.subject}</h1>
           <div className="flex min-w-0 items-center gap-2">
@@ -86,7 +86,8 @@ export function MessageView(props: MessageViewProps) {
         </div>
       </header>
 
-      <ScrollArea className="flex-1">
+      {/* Scrollable Message Content Area */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <article className="mx-auto max-w-4xl space-y-6 p-6">
           <div className="rounded-[8px] border p-4">
             <div className="mb-4 flex items-start justify-between gap-4">
@@ -125,7 +126,7 @@ export function MessageView(props: MessageViewProps) {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="text">
-                <pre className="mt-4 whitespace-pre-wrap rounded-[8px] bg-white text-sm leading-7">
+                <pre className="mt-4 whitespace-pre-wrap break-words rounded-[8px] bg-white text-sm leading-7">
                   {bodyText}
                 </pre>
               </TabsContent>
@@ -134,7 +135,7 @@ export function MessageView(props: MessageViewProps) {
                   title="Email HTML body"
                   sandbox=""
                   srcDoc={props.message.html || ""}
-                  className="mt-4 h-[520px] w-full rounded-[8px] border bg-white"
+                  className="mt-4 min-h-[520px] w-full rounded-[8px] border bg-white"
                 />
               </TabsContent>
             </Tabs>
@@ -148,7 +149,7 @@ export function MessageView(props: MessageViewProps) {
             </div>
           )}
         </article>
-      </ScrollArea>
+      </div>
     </section>
   );
 }

@@ -9,17 +9,27 @@ import {
 import { jsonError, jsonOk, readAccountBody } from "@/lib/resend/route-utils";
 import type { AccountRequest, SendReplyResponse } from "@/lib/resend/types";
 
+type AttachmentInput = {
+  filename: string;
+  content: string;
+  contentType?: string;
+};
+
 type Body = {
   account: AccountRequest;
   emailId?: string;
   text?: string;
+  html?: string;
+  attachments?: AttachmentInput[];
 };
 
 export async function POST(request: Request) {
   try {
     const body = await readAccountBody<Body>(request);
     if (!body.emailId?.trim()) throw new Error("Email id is required.");
-    if (!body.text?.trim()) throw new Error("Reply text is required.");
+    if (!body.text?.trim() && !body.html?.trim()) {
+      throw new Error("Reply content is required.");
+    }
 
     const resend = makeClient(body.account);
     const inbound = await resend.emails.receiving.get(body.emailId.trim());
@@ -34,11 +44,19 @@ export async function POST(request: Request) {
       inReplyTo,
     );
 
+    const attachments = (body.attachments || []).map((att) => ({
+      filename: att.filename,
+      content: Buffer.from(att.content, "base64"),
+      contentType: att.contentType,
+    }));
+
     const response = await resend.emails.send({
       from,
       to: [recipient],
       subject: ensureReSubject(inbound.data.subject),
-      text: body.text.trim(),
+      text: body.text?.trim() || "",
+      ...(body.html ? { html: body.html } : {}),
+      ...(attachments.length > 0 ? { attachments } : {}),
       headers: {
         ...(inReplyTo ? { "In-Reply-To": inReplyTo } : {}),
         ...(references ? { References: references } : {}),

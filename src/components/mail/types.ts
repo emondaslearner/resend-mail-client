@@ -32,6 +32,37 @@ export type MailState = {
   error: string | null;
 };
 
+export type EnvAccount = {
+  available: boolean;
+  label: string;
+  fromAddress: string | null;
+};
+
+export type AttachmentPayload = {
+  filename: string;
+  content: string; // base64
+  contentType: string;
+  size?: number;
+};
+
+export type ReplyPayload = {
+  html: string;
+  text: string;
+  attachments?: AttachmentPayload[];
+};
+
+export const INITIAL_STATE: MailState = {
+  accounts: [],
+  activeAccountId: null,
+  mailbox: "inbox",
+  messages: [],
+  selectedMessage: null,
+  accountInfo: null,
+  loading: false,
+  loadingMessage: false,
+  error: null,
+};
+
 export function toAccountRequest(account: MailAccount): AccountRequest {
   return {
     source: account.source,
