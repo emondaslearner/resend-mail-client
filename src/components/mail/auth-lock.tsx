@@ -106,3 +106,4 @@ export function AuthLock({ onUnlock }: AuthLockProps) {
     </div>
   );
 }
+

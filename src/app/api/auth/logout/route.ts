@@ -6,3 +6,4 @@ export async function POST() {
   clearAuthCookie(response);
   return response;
 }
+

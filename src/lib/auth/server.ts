@@ -64,3 +64,4 @@ export function setAuthCookie(response: NextResponse): void {
 export function clearAuthCookie(response: NextResponse): void {
   response.cookies.delete(AUTH_COOKIE_NAME);
 }
+
