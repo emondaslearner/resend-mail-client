@@ -256,6 +256,7 @@ export function MailClient(props: MailClientProps = {}) {
       payload.text,
       payload.html,
       payload.attachments,
+      payload.from,
     );
     setMessageManuallySent(result.id);
     setNotice(`Reply sent: ${result.id}`);
@@ -330,6 +331,11 @@ export function MailClient(props: MailClientProps = {}) {
             setMessageRead(state.selectedMessage.id, !activeReadIds.has(state.selectedMessage.id));
           }}
           onSendReply={reply}
+          domains={state.accountInfo?.domains}
+          defaultSender={{
+            name: settings.defaultSenderName,
+            email: settings.defaultSenderEmail || activeAccount?.fromAddress,
+          }}
         />
       </div>
 

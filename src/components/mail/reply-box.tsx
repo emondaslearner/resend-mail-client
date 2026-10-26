@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -8,68 +8,20 @@ import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Strikethrough,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Quote,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Link2,
-  ImageIcon,
-  Paperclip,
-  Video,
-  FileText,
-  Send,
-  X,
-  Undo2,
-  Redo2,
-} from "lucide-react";
+import { FileText, ImageIcon, Paperclip, Send, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { bytes, fileToAttachment } from "@/components/mail/format";
 import type { AttachmentPayload, ReplyPayload } from "@/components/mail/types";
+import type { DomainInfo } from "@/lib/resend/types";
+import { SenderSelector } from "@/components/mail/sender-selector";
+import { ReplyToolbar } from "@/components/mail/reply-toolbar";
 
 type ReplyBoxProps = {
   disabled?: boolean;
   onSend: (payload: ReplyPayload) => Promise<void>;
+  domains?: DomainInfo[];
+  defaultSender?: { name?: string; email?: string };
 };
-
-function ToolbarBtn({
-  active,
-  disabled,
-  onClick,
-  title,
-  children,
-}: {
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-      className={[
-        "flex size-7 items-center justify-center rounded transition-colors",
-        "hover:bg-muted disabled:pointer-events-none disabled:opacity-40",
-        active ? "bg-muted font-bold text-foreground" : "text-muted-foreground",
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
 
 function getFileIcon(type: string) {
   if (type.startsWith("video/")) return <Video className="size-3.5 text-blue-500" />;
@@ -77,12 +29,33 @@ function getFileIcon(type: string) {
   return <FileText className="size-3.5 text-amber-500" />;
 }
 
-export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
+export function ReplyBox({ disabled, onSend, domains, defaultSender }: ReplyBoxProps) {
   const [sending, setSending] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [senderName, setSenderName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("resend-mail-client.last-sender.v1");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.name) setSenderName(parsed.name);
+        if (parsed.email) setSenderEmail(parsed.email);
+        return;
+      }
+    } catch {}
+
+    if (defaultSender?.name) setSenderName(defaultSender.name);
+    if (defaultSender?.email) setSenderEmail(defaultSender.email);
+    else if (domains && domains.length > 0) {
+      const verified = domains.find((d) => d.status === "verified" && d.sending === "enabled");
+      if (verified) setSenderEmail(`support@${verified.name}`);
+    }
+  }, [defaultSender, domains]);
 
   const editor = useEditor({
     extensions: [
@@ -109,10 +82,23 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
     try {
       const html = editor.getHTML();
       const text = editor.getText();
+      const from = senderEmail.trim()
+        ? (senderName.trim() ? `${senderName.trim()} <${senderEmail.trim()}>` : senderEmail.trim())
+        : undefined;
+
+      if (senderEmail.trim()) {
+        try {
+          window.localStorage.setItem(
+            "resend-mail-client.last-sender.v1",
+            JSON.stringify({ name: senderName, email: senderEmail }),
+          );
+        } catch {}
+      }
+
       const attachments: AttachmentPayload[] = await Promise.all(
         attachedFiles.map((file) => fileToAttachment(file)),
       );
-      await onSend({ html, text, attachments });
+      await onSend({ html, text, from, attachments });
       editor.commands.clearContent();
       setAttachedFiles([]);
     } finally {
@@ -122,8 +108,7 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
 
   function addFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const incoming = Array.from(files);
-    setAttachedFiles((prev) => [...prev, ...incoming]);
+    setAttachedFiles((prev) => [...prev, ...Array.from(files)]);
   }
 
   function addImageInline(files: FileList | null) {
@@ -137,10 +122,6 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
       };
       reader.readAsDataURL(file);
     });
-  }
-
-  function removeFile(index: number) {
-    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   const setLink = useCallback(() => {
@@ -161,132 +142,17 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
 
   return (
     <div className="rounded-[8px] border bg-white shadow-xs">
+      {/* Sender (From) Selector */}
+      <SenderSelector
+        name={senderName}
+        email={senderEmail}
+        onNameChange={setSenderName}
+        onEmailChange={setSenderEmail}
+        domains={domains}
+      />
+
       {/* Formatting toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/20 px-2 py-1.5">
-        <ToolbarBtn
-          title="Undo"
-          disabled={!editor.can().undo()}
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <Undo2 className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Redo"
-          disabled={!editor.can().redo()}
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <Redo2 className="size-3.5" />
-        </ToolbarBtn>
-
-        <div className="mx-1 h-4 w-px bg-border" />
-
-        <ToolbarBtn
-          title="Heading 1"
-          active={editor.isActive("heading", { level: 1 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        >
-          <Heading1 className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Heading 2"
-          active={editor.isActive("heading", { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          <Heading2 className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Heading 3"
-          active={editor.isActive("heading", { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          <Heading3 className="size-3.5" />
-        </ToolbarBtn>
-
-        <div className="mx-1 h-4 w-px bg-border" />
-
-        <ToolbarBtn
-          title="Bold"
-          active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <Bold className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Italic"
-          active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Underline"
-          active={editor.isActive("underline")}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <UnderlineIcon className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Strikethrough"
-          active={editor.isActive("strike")}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-        >
-          <Strikethrough className="size-3.5" />
-        </ToolbarBtn>
-
-        <div className="mx-1 h-4 w-px bg-border" />
-
-        <ToolbarBtn
-          title="Bullet list"
-          active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <List className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Numbered list"
-          active={editor.isActive("orderedList")}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Blockquote"
-          active={editor.isActive("blockquote")}
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        >
-          <Quote className="size-3.5" />
-        </ToolbarBtn>
-
-        <div className="mx-1 h-4 w-px bg-border" />
-
-        <ToolbarBtn
-          title="Align left"
-          active={editor.isActive({ textAlign: "left" })}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-        >
-          <AlignLeft className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Align center"
-          active={editor.isActive({ textAlign: "center" })}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-        >
-          <AlignCenter className="size-3.5" />
-        </ToolbarBtn>
-        <ToolbarBtn
-          title="Align right"
-          active={editor.isActive({ textAlign: "right" })}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-        >
-          <AlignRight className="size-3.5" />
-        </ToolbarBtn>
-
-        <div className="mx-1 h-4 w-px bg-border" />
-
-        <ToolbarBtn title="Insert link" active={editor.isActive("link")} onClick={setLink}>
-          <Link2 className="size-3.5" />
-        </ToolbarBtn>
-      </div>
+      <ReplyToolbar editor={editor} onSetLink={setLink} />
 
       {/* Editor Content */}
       <EditorContent editor={editor} />
@@ -312,7 +178,7 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
                 <button
                   type="button"
                   title="Remove"
-                  onClick={() => removeFile(i)}
+                  onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))}
                   className="cursor-pointer text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-3.5" />
@@ -326,24 +192,30 @@ export function ReplyBox({ disabled, onSend }: ReplyBoxProps) {
       {/* Action / Attachment Bar */}
       <div className="flex items-center justify-between border-t px-3 py-2">
         <div className="flex items-center gap-1">
-          <ToolbarBtn
+          <button
+            type="button"
             title="Attach files (documents, archives, etc.)"
             onClick={() => fileInputRef.current?.click()}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
           >
             <Paperclip className="size-4" />
-          </ToolbarBtn>
-          <ToolbarBtn
+          </button>
+          <button
+            type="button"
             title="Attach video (MP4, WebM, MOV, etc.)"
             onClick={() => videoInputRef.current?.click()}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
           >
             <Video className="size-4" />
-          </ToolbarBtn>
-          <ToolbarBtn
+          </button>
+          <button
+            type="button"
             title="Insert image inline"
             onClick={() => imageInputRef.current?.click()}
+            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-muted"
           >
             <ImageIcon className="size-4" />
-          </ToolbarBtn>
+          </button>
         </div>
 
         <Button

@@ -42,7 +42,14 @@ export function makeClient(account: AccountRequest): Resend {
   return new Resend(resolveApiKey(account));
 }
 
-export function resolveFromAddress(account: AccountRequest, info?: AccountInfo): string {
+export function resolveFromAddress(
+  account: AccountRequest,
+  info?: AccountInfo,
+  customFrom?: string,
+): string {
+  const custom = customFrom?.trim();
+  if (custom) return custom;
+
   const explicit = account.fromAddress?.trim() || process.env.RESEND_FROM_EMAIL?.trim();
   if (explicit) return explicit;
 

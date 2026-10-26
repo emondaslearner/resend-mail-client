@@ -20,6 +20,7 @@ type Body = {
   emailId?: string;
   text?: string;
   html?: string;
+  from?: string;
   attachments?: AttachmentInput[];
 };
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     if (inbound.error || !inbound.data) throw inbound.error;
 
     const info = await loadAccountInfo(body.account);
-    const from = resolveFromAddress(body.account, info);
+    const from = resolveFromAddress(body.account, info, body.from);
     const recipient = inbound.data.reply_to?.[0]?.trim() || inbound.data.from;
     const inReplyTo = inbound.data.message_id?.trim() || null;
     const references = appendReference(

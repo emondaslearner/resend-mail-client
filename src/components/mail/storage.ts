@@ -1,7 +1,6 @@
 "use client";
 
-import type { MailAccount } from "@/components/mail/types";
-import type { MailSettings } from "@/components/mail/types";
+import type { MailAccount, MailSettings } from "@/components/mail/types";
 
 const STORAGE_KEY = "resend-mail-client.accounts.v1";
 const ACTIVE_KEY = "resend-mail-client.active-account.v1";
@@ -102,6 +101,8 @@ export function loadSettings(): MailSettings {
       autoCheckEnabled: typeof parsed?.autoCheckEnabled === "boolean"
         ? parsed.autoCheckEnabled
         : DEFAULT_SETTINGS.autoCheckEnabled,
+      defaultSenderName: typeof parsed?.defaultSenderName === "string" ? parsed.defaultSenderName : undefined,
+      defaultSenderEmail: typeof parsed?.defaultSenderEmail === "string" ? parsed.defaultSenderEmail : undefined,
     };
   } catch {
     return DEFAULT_SETTINGS;

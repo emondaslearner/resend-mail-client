@@ -74,6 +74,7 @@ export async function sendReply(
   text: string,
   html?: string,
   attachments?: AttachmentPayload[],
+  from?: string,
 ): Promise<SendReplyResponse> {
   return postJson<SendReplyResponse>("/api/resend/reply", {
     account: toAccountRequest(account),
@@ -81,5 +82,6 @@ export async function sendReply(
     text,
     html,
     attachments,
+    from,
   });
 }

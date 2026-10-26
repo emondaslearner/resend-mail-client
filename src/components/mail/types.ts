@@ -18,6 +18,8 @@ export type Mailbox = "inbox" | "sent";
 
 export type MailSettings = {
   autoCheckEnabled: boolean;
+  defaultSenderName?: string;
+  defaultSenderEmail?: string;
 };
 
 export type MailState = {
@@ -48,6 +50,7 @@ export type AttachmentPayload = {
 export type ReplyPayload = {
   html: string;
   text: string;
+  from?: string;
   attachments?: AttachmentPayload[];
 };
 

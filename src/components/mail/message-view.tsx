@@ -4,7 +4,7 @@ import { Info, Loader2, Mail, MailOpen, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { EmailDetail } from "@/lib/resend/types";
+import type { DomainInfo, EmailDetail } from "@/lib/resend/types";
 import type { Mailbox, ReplyPayload } from "@/components/mail/types";
 import { formatDate, previewText, senderName } from "@/components/mail/format";
 import { ReplyBox } from "@/components/mail/reply-box";
@@ -18,6 +18,8 @@ type MessageViewProps = {
   onShowInfo: () => void;
   onToggleRead: () => void;
   onSendReply: (payload: ReplyPayload) => Promise<void>;
+  domains?: DomainInfo[];
+  defaultSender?: { name?: string; email?: string };
 };
 
 export function MessageView(props: MessageViewProps) {
@@ -142,7 +144,11 @@ export function MessageView(props: MessageViewProps) {
           </div>
 
           {props.mailbox === "inbox" ? (
-            <ReplyBox onSend={props.onSendReply} />
+            <ReplyBox
+              onSend={props.onSendReply}
+              domains={props.domains}
+              defaultSender={props.defaultSender}
+            />
           ) : (
             <div className="rounded-[8px] border bg-muted/40 p-4 text-sm text-muted-foreground">
               Replies are available for inbound messages.
