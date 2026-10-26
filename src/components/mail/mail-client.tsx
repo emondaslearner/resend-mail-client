@@ -44,7 +44,12 @@ import {
 
 type RefreshOptions = { silent?: boolean };
 
-export function MailClient() {
+type MailClientProps = {
+  isPasswordProtected?: boolean;
+  onLock?: () => void;
+};
+
+export function MailClient(props: MailClientProps = {}) {
   const [state, setState] = useState<MailState>(INITIAL_STATE);
   const [envAccount, setEnvAccount] = useState<EnvAccount | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -122,12 +127,7 @@ export function MailClient() {
   ) => {
     if (!account) return;
     if (!options.silent) {
-      setState((current) => ({
-        ...current,
-        loading: true,
-        selectedMessage: null,
-        error: null,
-      }));
+      setState((current) => ({ ...current, loading: true, selectedMessage: null, error: null }));
     }
 
     try {
@@ -135,12 +135,7 @@ export function MailClient() {
         loadAccountInfo(account),
         mailbox === "inbox" ? loadInbox(account) : loadSent(account),
       ]);
-      setState((current) => ({
-        ...current,
-        accountInfo: info,
-        messages: messages.emails,
-        loading: false,
-      }));
+      setState((current) => ({ ...current, accountInfo: info, messages: messages.emails, loading: false }));
     } catch (error) {
       if (options.silent) return;
       setState((current) => ({
@@ -164,10 +159,7 @@ export function MailClient() {
     const interval = window.setInterval(() => {
       if (checking) return;
       checking = true;
-      void refresh(activeAccount, state.mailbox, { silent: true })
-        .finally(() => {
-          checking = false;
-        });
+      void refresh(activeAccount, state.mailbox, { silent: true }).finally(() => { checking = false; });
     }, 60_000);
     return () => window.clearInterval(interval);
   }, [activeAccount, refresh, settings.autoCheckEnabled, state.loading, state.mailbox]);
@@ -203,64 +195,38 @@ export function MailClient() {
       return {
         ...current,
         accounts,
-        activeAccountId: current.activeAccountId === accountId
-          ? accounts[0]?.id || null
-          : current.activeAccountId,
+        activeAccountId: current.activeAccountId === accountId ? accounts[0]?.id || null : current.activeAccountId,
         selectedMessage: null,
       };
     });
-    setReadState((current) => {
-      const next = { ...current };
-      delete next[accountId];
-      return next;
-    });
-    setManualSentState((current) => {
-      const next = { ...current };
-      delete next[accountId];
-      return next;
-    });
+    setReadState((current) => { const next = { ...current }; delete next[accountId]; return next; });
+    setManualSentState((current) => { const next = { ...current }; delete next[accountId]; return next; });
   }
 
   function setMessageRead(emailId: string, read: boolean) {
     if (!activeAccount || state.mailbox !== "inbox") return;
-
     setReadState((current) => {
       const nextIds = new Set(current[activeAccount.id] || []);
-      if (read) {
-        nextIds.add(emailId);
-      } else {
-        nextIds.delete(emailId);
-      }
-      return {
-        ...current,
-        [activeAccount.id]: Array.from(nextIds),
-      };
+      if (read) nextIds.add(emailId); else nextIds.delete(emailId);
+      return { ...current, [activeAccount.id]: Array.from(nextIds) };
     });
   }
 
   function setMessageManuallySent(emailId: string) {
     if (!activeAccount) return;
-
     setManualSentState((current) => {
       const nextIds = new Set(current[activeAccount.id] || []);
       nextIds.add(emailId);
-      return {
-        ...current,
-        [activeAccount.id]: Array.from(nextIds),
-      };
+      return { ...current, [activeAccount.id]: Array.from(nextIds) };
     });
   }
 
   function markAllRead() {
     if (!activeAccount || state.mailbox !== "inbox") return;
-
     setReadState((current) => {
       const nextIds = new Set(current[activeAccount.id] || []);
       state.messages.forEach((message) => nextIds.add(message.id));
-      return {
-        ...current,
-        [activeAccount.id]: Array.from(nextIds),
-      };
+      return { ...current, [activeAccount.id]: Array.from(nextIds) };
     });
     setMarkAllReadOpen(false);
     setNotice("All inbox messages marked as read.");
@@ -271,11 +237,7 @@ export function MailClient() {
     setState((current) => ({ ...current, loadingMessage: true, error: null }));
     try {
       const message = await loadMessage(activeAccount, emailId, state.mailbox);
-      setState((current) => ({
-        ...current,
-        selectedMessage: message,
-        loadingMessage: false,
-      }));
+      setState((current) => ({ ...current, selectedMessage: message, loadingMessage: false }));
       setMessageRead(emailId, true);
     } catch (error) {
       setState((current) => ({
@@ -305,7 +267,6 @@ export function MailClient() {
       if (!state.loading) void refresh(activeAccount, mailbox);
       return;
     }
-
     setState((current) => ({ ...current, mailbox, selectedMessage: null }));
   }
 
@@ -336,6 +297,7 @@ export function MailClient() {
         onShowInfo={() => setDetailsOpen(true)}
         onShowSettings={() => setSettingsOpen(true)}
         onRemoveAccount={removeAccount}
+        onLock={props.isPasswordProtected ? props.onLock : undefined}
       />
       <MessageList
         messages={state.messages}

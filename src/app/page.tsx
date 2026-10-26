@@ -1,5 +1,5 @@
-import { MailClient } from "@/components/mail/mail-client";
+import { AuthGate } from "@/components/mail/auth-gate";
 
 export default function Home() {
-  return <MailClient />;
+  return <AuthGate />;
 }

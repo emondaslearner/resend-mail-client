@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ResendApiError } from "@/lib/resend/server";
+import { isAuthorized } from "@/lib/auth/server";
 import type { AccountRequest } from "@/lib/resend/types";
 
 export type AccountBody = {
@@ -7,6 +8,10 @@ export type AccountBody = {
 };
 
 export async function readAccountBody<T extends AccountBody>(request: Request): Promise<T> {
+  if (!isAuthorized(request)) {
+    throw new ResendApiError("Unauthorized: inbox password required.", 401);
+  }
+
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
     throw new ResendApiError("Request body must be JSON.", 400);

@@ -1,6 +1,16 @@
 "use client";
 
-import { Inbox, Info, KeyRound, Plus, RefreshCw, Send, Settings, Trash2 } from "lucide-react";
+import {
+  Inbox,
+  Info,
+  KeyRound,
+  Lock,
+  Plus,
+  RefreshCw,
+  Send,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +30,7 @@ type SidebarProps = {
   onShowInfo: () => void;
   onShowSettings: () => void;
   onRemoveAccount: (id: string) => void;
+  onLock?: () => void;
 };
 
 export function Sidebar(props: SidebarProps) {
@@ -101,6 +112,16 @@ export function Sidebar(props: SidebarProps) {
           <Settings className="size-4" />
           Settings
         </Button>
+        {props.onLock ? (
+          <Button
+            className="w-full justify-start cursor-pointer text-slate-700 hover:text-slate-900"
+            variant="ghost"
+            onClick={props.onLock}
+          >
+            <Lock className="size-4" />
+            Lock inbox
+          </Button>
+        ) : null}
       </nav>
 
       <Separator className="my-4" />
