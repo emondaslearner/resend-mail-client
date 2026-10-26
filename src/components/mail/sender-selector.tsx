@@ -24,8 +24,8 @@ export function SenderSelector({
 
   function handleDomainPick(domainName: string) {
     if (!domainName) return;
-    const prefix = email ? email.split("@")[0].trim() : "support";
-    onEmailChange(`${prefix || "support"}@${domainName}`);
+    const prefix = email ? email.split("@")[0].trim() : "antar";
+    onEmailChange(`${prefix || "antar"}@${domainName}`);
   }
 
   const selectedDomain = verifiedDomains.find((d) => email.toLowerCase().endsWith(`@${d.name.toLowerCase()}`));
@@ -40,10 +40,10 @@ export function SenderSelector({
       {/* Sender Name */}
       <input
         type="text"
-        placeholder="Sender Name (e.g. Antar)"
+        placeholder="Antar"
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
-        className="h-7 w-32 rounded border bg-white px-2 text-xs font-medium text-slate-900 placeholder:text-muted-foreground/70 focus:border-blue-500 focus:outline-none"
+        className="h-7 w-28 rounded border bg-white px-2 text-xs font-medium text-slate-900 placeholder:text-muted-foreground/70 focus:border-blue-500 focus:outline-none"
       />
 
       {/* Sender Email Address */}
@@ -51,7 +51,7 @@ export function SenderSelector({
         <span className="text-muted-foreground">&lt;</span>
         <input
           type="email"
-          placeholder="email@100xsale.com"
+          placeholder="antar@100xsale.com"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           className="h-7 min-w-[180px] rounded border bg-white px-2 text-xs font-medium text-slate-900 placeholder:text-muted-foreground/70 focus:border-blue-500 focus:outline-none"
@@ -88,4 +88,3 @@ export function SenderSelector({
     </div>
   );
 }
-

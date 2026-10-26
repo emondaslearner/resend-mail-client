@@ -10,6 +10,7 @@ const SETTINGS_KEY = "resend-mail-client.settings.v1";
 
 export const DEFAULT_SETTINGS: MailSettings = {
   autoCheckEnabled: true,
+  defaultSenderName: "Antar",
 };
 
 function safeParseAccounts(value: string | null): MailAccount[] {
@@ -101,7 +102,9 @@ export function loadSettings(): MailSettings {
       autoCheckEnabled: typeof parsed?.autoCheckEnabled === "boolean"
         ? parsed.autoCheckEnabled
         : DEFAULT_SETTINGS.autoCheckEnabled,
-      defaultSenderName: typeof parsed?.defaultSenderName === "string" ? parsed.defaultSenderName : undefined,
+      defaultSenderName: typeof parsed?.defaultSenderName === "string" && parsed.defaultSenderName.trim()
+        ? parsed.defaultSenderName.trim()
+        : "Antar",
       defaultSenderEmail: typeof parsed?.defaultSenderEmail === "string" ? parsed.defaultSenderEmail : undefined,
     };
   } catch {

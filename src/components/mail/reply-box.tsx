@@ -32,8 +32,8 @@ function getFileIcon(type: string) {
 export function ReplyBox({ disabled, onSend, domains, defaultSender }: ReplyBoxProps) {
   const [sending, setSending] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [senderName, setSenderName] = useState("");
-  const [senderEmail, setSenderEmail] = useState("");
+  const [senderName, setSenderName] = useState(defaultSender?.name || "Antar");
+  const [senderEmail, setSenderEmail] = useState(defaultSender?.email || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -43,17 +43,17 @@ export function ReplyBox({ disabled, onSend, domains, defaultSender }: ReplyBoxP
       const stored = window.localStorage.getItem("resend-mail-client.last-sender.v1");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.name) setSenderName(parsed.name);
+        setSenderName(parsed.name?.trim() || defaultSender?.name || "Antar");
         if (parsed.email) setSenderEmail(parsed.email);
         return;
       }
     } catch {}
 
-    if (defaultSender?.name) setSenderName(defaultSender.name);
+    setSenderName(defaultSender?.name || "Antar");
     if (defaultSender?.email) setSenderEmail(defaultSender.email);
     else if (domains && domains.length > 0) {
       const verified = domains.find((d) => d.status === "verified" && d.sending === "enabled");
-      if (verified) setSenderEmail(`support@${verified.name}`);
+      if (verified) setSenderEmail(`antar@${verified.name}`);
     }
   }, [defaultSender, domains]);
 
@@ -82,15 +82,16 @@ export function ReplyBox({ disabled, onSend, domains, defaultSender }: ReplyBoxP
     try {
       const html = editor.getHTML();
       const text = editor.getText();
+      const effectiveName = senderName.trim() || "Antar";
       const from = senderEmail.trim()
-        ? (senderName.trim() ? `${senderName.trim()} <${senderEmail.trim()}>` : senderEmail.trim())
+        ? `${effectiveName} <${senderEmail.trim()}>`
         : undefined;
 
       if (senderEmail.trim()) {
         try {
           window.localStorage.setItem(
             "resend-mail-client.last-sender.v1",
-            JSON.stringify({ name: senderName, email: senderEmail }),
+            JSON.stringify({ name: effectiveName, email: senderEmail }),
           );
         } catch {}
       }
